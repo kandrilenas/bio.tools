@@ -1,10 +1,16 @@
+"""
+This script takes a GEO soft file, parses it, and then retrieves the listed file via FTP.
+"""
 import io
 from ftplib import FTP
 from urlparse import urlparse
 from os.path import basename
+import sys
+#import argparse
 
 #def get_value(line):
 #search_headers = ["^SERIES", "^SAMPLE", "!Sample_supplementary_file"]
+
 parse_file = 'GSE36104_family.soft'
 filetype_search = ['.txt', '.bed' ]
 ftp_server = 'ftp.ncbi.nlm.nih.gov'
@@ -23,30 +29,35 @@ def download_files(results_dict):
     for key in results_dict:
         url = urlparse(results_dict[key])
         file = open(basename(url.path), 'wb')
+        #TODO incorporate output directory
         ftp.retrbinary('RETR ' + url.path, file.write)
         file.close()
 
-results = dict()
-for line in io.open(parse_file):
-    key, value = line.strip().split(' = ')
-    if key == '^SERIES':
-        series_id = value
-    elif key == '^SAMPLE':
-        sample_id = value
-    elif key.startswith('!Sample_supplementary_file') and value_has_filetype(value):
-        results[sample_id] = value
+def main():
+    parse_file = sys.argv[1]
+    dir_out = os.path.normpath(sys.argv[2])
+    results = dict()
+    for line in io.open(parse_file):
+        key, value = line.strip().split(' = ')
+        if key == '^SERIES':
+            series_id = value
+        elif key == '^SAMPLE':
+            sample_id = value
+        elif key.startswith('!Sample_supplementary_file') and value_has_filetype(value):
+            results[sample_id] = value
 
-output = open(series_id + '_log.txt', 'w')
-output.write("Sample ID" + '\t' + "File URI")
-output.write('\n')
-for key in results:
-    output.write(key + '\t' + results[key])
+    output = open(series_id + '_log.txt', 'w')
+    output.write("Sample ID" + '\t' + "File URI")
     output.write('\n')
-output.close()
+    for key in results:
+        output.write(key + '\t' + results[key])
+        output.write('\n')
+    output.close()
 
-download_files(results)
+    download_files(results)
 
-
+if __name__ == "__main__":
+    main()
 
 
 
