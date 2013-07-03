@@ -5,6 +5,8 @@ import io
 from ftplib import FTP
 from urlparse import urlparse
 from os.path import basename
+from os.path import join
+from os.path import normpath
 import sys
 #import argparse
 
@@ -23,20 +25,22 @@ def value_has_filetype(value):
             return True
     return False
 
-def download_files(results_dict):
+def download_files(results_dict, dir_out):
     ftp = FTP(ftp_server)
     ftp.login(ftp_user, ftp_password)
     for key in results_dict:
         url = urlparse(results_dict[key])
-        file = open(basename(url.path), 'wb')
-        #TODO incorporate output directory
+        
+        file = open(join(dir_out, basename(url.path)), 'wb', 'utf-8')
+        print 'Downloading: ' + basename(url.path)
         ftp.retrbinary('RETR ' + url.path, file.write)
         file.close()
 
 def main():
     parse_file = sys.argv[1]
-    dir_out = os.path.normpath(sys.argv[2])
+    dir_out = normpath(sys.argv[2])
     results = dict()
+    #TODO find alternative to io.open that does not require the terminal to use en_US.utf8 locale
     for line in io.open(parse_file):
         key, value = line.strip().split(' = ')
         if key == '^SERIES':
@@ -54,7 +58,7 @@ def main():
         output.write('\n')
     output.close()
 
-    download_files(results)
+    download_files(results, dir_out)
 
 if __name__ == "__main__":
     main()
